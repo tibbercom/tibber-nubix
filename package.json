@@ -1,0 +1,30 @@
+{
+  "name": "<project name>",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./src/index.js",
+  "scripts": {
+    "start": "nodemon ./src/index.js --exec babel-node",
+    "prod": "node ./lib/index.js",
+    "build": "babel src -d lib;cp -R ./src/migrations ./lib;cp ./src/index.html ./lib;cp -R ./src/queries ./lib",
+    "test": "ava --require babel-register --verbose -s"  
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "ava": "^0.16.0",
+    "babel-cli": "^6.9.0",
+    "babel-core": "^6.9.0",
+    "babel-plugin-syntax-async-functions": "^6.8.0",
+    "babel-plugin-transform-async-to-generator": "^6.8.0",
+    "babel-preset-node6": "^11.0.0"
+  },
+  "dependencies": {
+    "aws-bluebird": "^1.0.0",
+    "body-parser": "^1.15.1",
+    "express": "^4.13.4",
+    "knex": "^0.11.4",
+    "pg": "^4.5.5",
+    "pg-promise": "^4.2.5"
+  }
+}
