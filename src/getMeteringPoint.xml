@@ -1,0 +1,41 @@
+<s:Envelope 
+    xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+    <s:Header>
+        <h:CredentialsHeader 
+            xmlns:h="http://www.nubix.no/CredentialsHeader" 
+            xmlns="http://www.nubix.no/CredentialsHeader" 
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            <Username xmlns="">{#username#}</Username>
+            <Password xmlns="">{#password#}</Password>
+        </h:CredentialsHeader>
+    </s:Header>
+    <s:Body 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+        <GetMeteringPointIdRequest 
+            xmlns="http://www.nubix.no/MeteringPointMethods">
+            <request>
+                <RequestId 
+                    xmlns="">{#requestId#}
+                </RequestId>
+                <Requestor 
+                    xmlns="">
+                    <GLN>{#gln#}</GLN>
+                </Requestor>
+                <DomesticCustomer 
+                    xmlns="">
+                    <LastName>{#lastName#}</LastName>
+                    <FirstName>{#firstName#}</FirstName>
+                    <BirthDate>{#birthDate#}</BirthDate>
+                    <Address>
+                        <Address1>{#address#}</Address1>
+                        <PostCode>{#postalCode#}</PostCode>
+                        <Location>{#city#}</Location>
+                        <CountryCode>NO</CountryCode>
+                    </Address>
+                </DomesticCustomer>
+            </request>
+        </GetMeteringPointIdRequest>
+    </s:Body>
+</s:Envelope>

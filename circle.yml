@@ -1,23 +1,10 @@
-
 machine:
-  environment:
-    PATH: "$PATH:~/$CIRCLE_PROJECT_REPONAME/bin"
-    TEST_DB_URL: postgres://ubuntu:@127.0.0.1:5432/circle_test
-  services:
-    - docker
-  python:
-    version: 2.7
   node:
     version: 6.2.0
-dependencies:
-  pre:
-    - pip install awsebcli
-  post:
-    - docker build --rm=false -t tibber/template:1.$CIRCLE_BUILD_NUM . | cat # workaround progress weirdness
-    - docker tag tibber/template:1.$CIRCLE_BUILD_NUM tibber/template:latest
 deployment:
-  production:
+  npm:
     branch: master
     commands:
-      - ./deploy.sh
-   
+      - npm run build
+      - echo -e "$NPM_USERNAME\n$NPM_PASSWORD\n$NPM_EMAIL" | npm login
+      - npm run 2npm

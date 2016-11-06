@@ -8,6 +8,10 @@ pids
 *.pid
 *.seed
 
+test.xml
+test2.js
+test3.js
+
 .DS_Store
 .vscode
 .create_daniel.sql
