@@ -1,6 +1,6 @@
 ## Usage
 
-````
+```
 const client = new NubixClient(<nubixUser>, <nubixPwd>, <requesterGlnNo>);
 const response = await client.getMeteringPointInfo({
               firstName: 'Ola',
@@ -13,7 +13,7 @@ const response = await client.getMeteringPointInfo({
               }
     });
 
-    
+
 // Response:
 // [
 //     {
