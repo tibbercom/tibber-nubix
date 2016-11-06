@@ -23,8 +23,6 @@ function find(source, propertyName) {
       return undefined;
 
     var keys = Object.keys(source);
-    
-    
 
     if (keys.length == 0)
         return undefined;
@@ -102,7 +100,6 @@ export class NubixClient {
             if (!Array.isArray(m.customers)){
                 m.customers = [m.customers];
             }
-
              return{
                 
                 gridOwner : {
