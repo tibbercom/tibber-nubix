@@ -20,7 +20,7 @@ function _validateAndReturn(source, propName) {
 function find(source, propertyName) {
 
     if (!source || (typeof source != 'object'))
-      return undefined;
+        return undefined;
 
     var keys = Object.keys(source);
 
@@ -32,8 +32,8 @@ function find(source, propertyName) {
     }
 
     for (let i = 0; i < keys.length; i++) {
-        const result = find(source[keys[i]],propertyName);
-        
+        const result = find(source[keys[i]], propertyName);
+
         if (result != undefined)
             return result;
     }
@@ -82,7 +82,7 @@ export class NubixClient {
             body: body
         };
 
-        let response = await rp(options);
+        let response = await rp(options);       
 
         const result = await new Promise((resolve, reject) => {
             const parser = new xml2js.Parser({ explicitArray: false, normalizeTags: true });
@@ -93,42 +93,47 @@ export class NubixClient {
                 }
                 resolve(result);
             });
-        });        
+        });
 
-        return find(result,'response').filter(r=> r.responsestatus.statuscode === "Found").map(m=>{
-            
-            if (!Array.isArray(m.customers)){
+        let resultResponse = find(result, 'response');
+
+        if (!Array.isArray(resultResponse))
+            resultResponse = [resultResponse];
+
+        return resultResponse.filter(r => r.responsestatus.statuscode === "Found").map(m => {
+
+            if (!Array.isArray(m.customers)) {
                 m.customers = [m.customers];
             }
-             return{
-                
-                gridOwner : {
+            return {
+
+                gridOwner: {
                     name: m.gridowner.name,
                     gln: m.gridowner.gln
-                },                
-                customers : m.customers.map(c=>{
-                  
-                  let readingType = find(c,'meterreadingtransmissiontype');
-                  readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown' 
+                },
+                customers: m.customers.map(c => {
 
-                  return {
-                     lastName : lastName,
-                     firstName: firstName,
-                     birthDate: birthDate,
-                     address:{
-                         address: find(c, 'address1'),
-                         postalCode: find(c, 'postcode'),
-                         city: find(c,'location')
-                     },                     
-                     installation :{
-                         description : find(c,'description'),
-                         meteringPointId : find(c,'meteringpointid'),
-                         meterNumber: c.domesticcustomer.meternumber,
-                         readingType: readingType,
-                         lastMeterReadingDate: find(c,'lastmeterreadingdate')
-                         
-                     }
-                  }
+                    let readingType = find(c, 'meterreadingtransmissiontype');
+                    readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown'
+
+                    return {
+                        lastName: lastName,
+                        firstName: firstName,
+                        birthDate: birthDate,
+                        address: {
+                            address: find(c, 'address1'),
+                            postalCode: find(c, 'postcode'),
+                            city: find(c, 'location')
+                        },
+                        installation: {
+                            description: find(c, 'description'),
+                            meteringPointId: find(c, 'meteringpointid'),
+                            meterNumber: c.domesticcustomer.meternumber,
+                            readingType: readingType,
+                            lastMeterReadingDate: find(c, 'lastmeterreadingdate')
+
+                        }
+                    }
 
                 })
             }
