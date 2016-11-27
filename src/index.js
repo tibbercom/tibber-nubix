@@ -2,7 +2,7 @@
 import rp from 'request-promise';
 import fs from 'fs';
 import moment from 'moment-timezone';
-import uuid from 'node-uuid';
+import uuid from 'uuid';
 import xml2js from 'xml2js';
 
 
@@ -93,8 +93,7 @@ export class NubixClient {
                 }
                 resolve(result);
             });
-        });
-        console.log(response);
+        });        
 
         return find(result,'response').filter(r=> r.responsestatus.statuscode === "Found").map(m=>{
             
