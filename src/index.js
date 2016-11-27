@@ -93,7 +93,8 @@ export class NubixClient {
                 }
                 resolve(result);
             });
-        });        
+        });
+        console.log(response);
 
         return find(result,'response').filter(r=> r.responsestatus.statuscode === "Found").map(m=>{
             
@@ -108,6 +109,9 @@ export class NubixClient {
                 },                
                 customers : m.customers.map(c=>{
                   
+                  let readingType = find(c,'meterreadingtransmissiontype');
+                  readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown' 
+
                   return {
                      lastName : lastName,
                      firstName: firstName,
@@ -116,11 +120,14 @@ export class NubixClient {
                          address: find(c, 'address1'),
                          postalCode: find(c, 'postcode'),
                          city: find(c,'location')
-                     },
+                     },                     
                      installation :{
                          description : find(c,'description'),
-                         meteringPoinIid : find(c,'meteringpointid'),
-                         meterNumber: c.domesticcustomer.meternumber
+                         meteringPointId : find(c,'meteringpointid'),
+                         meterNumber: c.domesticcustomer.meternumber,
+                         readingType: readingType,
+                         lastMeterReadingDate: find(c,'lastmeterreadingdate')
+                         
                      }
                   }
 
