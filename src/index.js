@@ -56,14 +56,14 @@ export class NubixClient {
 
         const firstName = _validateAndReturn(request, 'firstName');
         const lastName = _validateAndReturn(request, 'lastName');
-        const birthDate = moment.tz(_validateAndReturn(request, 'birthDate'), 'Europe/Oslo');
+        const birthDate = moment.tz(_validateAndReturn(request, 'birthDate'), 'Europe/Oslo').format('YYYY-MM-DD');
         const address = _validateAndReturn(request.address, 'address');
         const postalCode = _validateAndReturn(request.address, 'postalCode');
         const city = _validateAndReturn(request.address, 'city');
 
         let body = template.replace('{#firstName#}', firstName);
         body = body.replace('{#lastName#}', lastName);
-        body = body.replace('{#birthDate#}', birthDate.format('YYYY-MM-DD'));
+        body = body.replace('{#birthDate#}', birthDate);
         body = body.replace('{#address#}', address);
         body = body.replace('{#postalCode#}', postalCode);
         body = body.replace('{#city#}', city);
