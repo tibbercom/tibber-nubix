@@ -1,4 +1,6 @@
-require('babel-polyfill');
+if (!global._babelPolyfill) {
+  require('babel-polyfill')
+}
 import rp from 'request-promise';
 import fs from 'fs';
 import moment from 'moment-timezone';
