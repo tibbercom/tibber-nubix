@@ -21,29 +21,26 @@ const response = await client.getMeteringPointInfo({
 
 
 // Response:
-// [
+//   [
 //     {
-//         "gridOwner": {
-//             "name": "Sunnfjord Energi AS Nett",
-//             "gln": "7080005051064"
-//         },
-//         "customers": [
-//             {
-//                 "lastName": "Nordmann",
-//                 "firstName": "Ola",
-//                 "birthDate": "1983-03-21T23:00:00.000Z",
-//                 "address": {
-//                     "address": "",
-//                     "postalCode": "6800",
-//                     "city": "FØRDE"
-//                 },
-//                 "installation": {
-//                     "description": "Bustad",
-//                     "meteringPoinIid": "7070575000833338072",
-//                     "meterNumber": "1623242"
-//                 }
-//             }
-//         ]
+//       "lastName": "Normann",
+//       "firstName": "Ola",
+//       "birthDate": "1977-01-13",
+//       "address": {
+//         "address": "SomeAddress 12",
+//         "postalCode": "6800",
+//         "city": "FØRDE"
+//       },
+//       "installation": {
+//         "description": "rekke B3, leil 16",
+//         "meteringPointId": "707057500084133439",
+//         "meterNumber": "166634341",
+//         "readingType": "remote"
+//       },
+//       "gridOwner": {
+//         "name": "Sunnfjord Energi AS Nett",
+//         "gln": "7080005051064"
+//       }
 //     }
-// ]
+//   ]
 ```

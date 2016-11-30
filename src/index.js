@@ -1,11 +1,12 @@
 if (!global._babelPolyfill) {
-  require('babel-polyfill')
+    require('babel-polyfill')
 }
 import rp from 'request-promise';
 import fs from 'fs';
 import moment from 'moment-timezone';
 import uuid from 'uuid';
 import xml2js from 'xml2js';
+import flatten from 'lodash.flatten';
 
 
 const template = fs.readFileSync(__dirname + '/getMeteringPoint.xml', "utf8");
@@ -84,8 +85,8 @@ export class NubixClient {
             body: body
         };
 
-        let response = await rp(options);       
-
+        let response = await rp(options);
+       
         const result = await new Promise((resolve, reject) => {
             const parser = new xml2js.Parser({ explicitArray: false, normalizeTags: true });
             parser.parseString(response, function (err, result) {
@@ -102,43 +103,39 @@ export class NubixClient {
         if (!Array.isArray(resultResponse))
             resultResponse = [resultResponse];
 
-        return resultResponse.filter(r => r.responsestatus.statuscode === "Found").map(m => {
+        return flatten(resultResponse.filter(r => r.responsestatus.statuscode === "Found").map(m => {
 
-            if (!Array.isArray(m.customers)) {
-                m.customers = [m.customers];
-            }
-            return {
+            m.customers = m.customers.domesticcustomer;
+            m.customers = Array.isArray(m.customers)? m.customers : [m.customers];
+            
+            const gridOwner = {
+                name: m.gridowner.name,
+                gln: m.gridowner.gln
+            };            
 
-                gridOwner: {
-                    name: m.gridowner.name,
-                    gln: m.gridowner.gln
-                },
-                customers: m.customers.map(c => {
+            return m.customers.map(c => {
+                let readingType = find(c, 'meterreadingtransmissiontype');
+                readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown'
 
-                    let readingType = find(c, 'meterreadingtransmissiontype');
-                    readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown'
-
-                    return {
-                        lastName: lastName,
-                        firstName: firstName,
-                        birthDate: birthDate,
-                        address: {
-                            address: find(c, 'address1'),
-                            postalCode: find(c, 'postcode'),
-                            city: find(c, 'location')
-                        },
-                        installation: {
-                            description: find(c, 'description'),
-                            meteringPointId: find(c, 'meteringpointid'),
-                            meterNumber: c.domesticcustomer.meternumber,
-                            readingType: readingType,
-                            lastMeterReadingDate: find(c, 'lastmeterreadingdate')
-
-                        }
-                    }
-
-                })
-            }
-        });
+                return {
+                    lastName: lastName,
+                    firstName: firstName,
+                    birthDate: birthDate,
+                    address: {
+                        address: find(c, 'address1'),
+                        postalCode: find(c, 'postcode'),
+                        city: find(c, 'location')
+                    },
+                    installation: {
+                        description: find(c, 'description'),
+                        meteringPointId: find(c, 'meteringpointid'),
+                        meterNumber: c.meternumber,
+                        readingType: readingType,
+                        lastMeterReadingDate: find(c, 'lastmeterreadingdate')
+                    },
+                    gridOwner: gridOwner
+                }
+            })
+        }));
     }
 }
