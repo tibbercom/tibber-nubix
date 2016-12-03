@@ -82,7 +82,8 @@ export class NubixClient {
                 "SOAPAction": "Statnett.Nubix.NubixService:getMeteringPointIdIn",
                 "Content-Type": "text/xml; charset=utf-8"
             },
-            body: body
+            body: body,
+            timeout: 5000
         };
 
         let response = await rp(options);
