@@ -1,0 +1,28 @@
+<s:Envelope 
+    xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+    <s:Header>
+        <h:CredentialsHeader 
+            xmlns:h="http://www.nubix.no/CredentialsHeader" 
+            xmlns="http://www.nubix.no/CredentialsHeader" 
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+            xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+            <Username xmlns="">{{userName}}</Username>
+            <Password xmlns="">{{password}}</Password>
+        </h:CredentialsHeader>
+    </s:Header>
+    <s:Body 
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+        xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+        <VerifyMeteringPointIdRequest 
+            xmlns="http://www.nubix.no/MeteringPointMethods">
+            <request>
+                <RequestId xmlns="">{{requestId}}</RequestId>
+                <Requestor xmlns=""><GLN>{{gln}}</GLN></Requestor>
+                {{#if birthDate}}<BirthDate xmlns="">{{birthDate}}</BirthDate>{{/if}}
+                {{#if orgNo}}<OrgNo xmlns="">{{orgNo}}</OrgNo>{{/if}}
+                <MeteringPointId xmlns="">{{meteringPointId}}</MeteringPointId>
+                <PostCode xmlns="">{{postalCode}}</PostCode>
+            </request>
+        </VerifyMeteringPointIdRequest>
+    </s:Body>
+</s:Envelope>

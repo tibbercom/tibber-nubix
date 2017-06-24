@@ -11,6 +11,7 @@ pids
 test.xml
 test2.js
 test3.js
+check-home.js
 
 .DS_Store
 .vscode

@@ -7,18 +7,10 @@ import moment from 'moment-timezone';
 import uuid from 'uuid';
 import xml2js from 'xml2js';
 import flatten from 'lodash.flatten';
+import Handlebars from 'handlebars';
 
-
-const template = fs.readFileSync(__dirname + '/getMeteringPoint.xml', "utf8");
-
-function _validateAndReturn(source, propName) {
-
-    if (source[propName] === undefined)
-        throw new Error(`property "${propName}" is required"`);
-
-    return source[propName];
-
-}
+const createGetMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/getMeteringPoint.xml', 'utf8'));
+const createVerifyMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/verifyMeteringPoint.xml', 'utf8'));
 
 function find(source, propertyName) {
 
@@ -44,37 +36,82 @@ function find(source, propertyName) {
     return undefined;
 }
 
+const parseXml = async xml =>
+    await new Promise((resolve, reject) =>
+        new xml2js.Parser({ explicitArray: false, normalizeTags: true })
+            .parseString(xml, (err, result) => err ? reject(err) : resolve(result))
+    );
+
 export class NubixClient {
 
     constructor(username, password, gln_no) {
-
         this._username = username;
         this._password = password;
         this._gln_no = gln_no;
+        this._errorTypes = ['GridOwnerError', 'NoGridOwner', 'NubixError', 'GridOwnerCommunicationError', 'InvalidRequest'];
     }
 
-    async getMeteringPointInfo(request) {
+    async verifyMeteringPoint(request) {
 
-        request.address = request.address || {};
+        const model = Object.assign({ requestId: uuid.v4(), userName: this._username, password: this._password, gln: this._gln_no }, request);
+        const payload = createVerifyMeteringPointPayload(model);
+        const options = {
+            uri: 'https://ws.nubix.no/2011/NubixService.svc',
+            method: 'POST',
+            headers: {
+                "SOAPAction": "Statnett.Nubix.NubixService:verifyMeteringPointIdIn",
+                "Content-Type": "text/xml; charset=utf-8"
+            },
+            body: payload,
+            timeout: 10000
+        };
 
-        const firstName = _validateAndReturn(request, 'firstName');
-        const lastName = _validateAndReturn(request, 'lastName');
-        const birthDate = moment.tz(_validateAndReturn(request, 'birthDate'), 'Europe/Oslo').format('YYYY-MM-DD');
-        const address = _validateAndReturn(request.address, 'address');
-        const postalCode = _validateAndReturn(request.address, 'postalCode');
-        const city = _validateAndReturn(request.address, 'city');
+        let response = await rp(options);        
+        const result = await parseXml(response);
+        const resultResponse = find(result, 'meteringpointverifications');
 
-        let body = template.replace('{#firstName#}', firstName);
-        body = body.replace('{#lastName#}', lastName);
-        body = body.replace('{#birthDate#}', birthDate);
-        body = body.replace('{#address#}', address);
-        body = body.replace('{#postalCode#}', postalCode);
-        body = body.replace('{#city#}', city);
-        body = body.replace('{#requestId#}', uuid.v4());
-        body = body.replace('{#gln#}', this._gln_no);
-        body = body.replace('{#username#}', this._username);
-        body = body.replace('{#password#}', this._password);
+        if (this._errorTypes.includes(resultResponse.responsestatus.statuscode))
+            throw new Error(resultResponse.responsestatus.description);
 
+        let returnResult = {
+            found: resultResponse.responsestatus.statuscode === 'Found'
+        };
+
+        if (!returnResult.found) return returnResult;
+
+        let readingType = find(resultResponse, 'meterreadingtransmissiontype');
+        readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown'
+
+        return Object.assign(returnResult, {    
+            name: find(resultResponse,'name'),
+            birthDate: find(resultResponse,'birthdate'),       
+            orgNo: find(resultResponse,'orgno'),
+            gridOwner: {
+                name: resultResponse.gridowner.name,
+                gln: resultResponse.gridowner.gln
+            },
+            address: {
+                address: find(resultResponse, 'address1'),
+                postalCode: find(resultResponse, 'postcode'),
+                city: find(resultResponse, 'location')
+            },
+            installation: {
+                description: find(resultResponse, 'description'),
+                meteringPointId: find(resultResponse, 'meteringpointid'),
+                meterNumber: resultResponse.meternumber,
+                readingType: readingType,
+                lastMeterReadingDate: find(resultResponse, 'lastmeterreadingdate')
+            }
+        });
+    }
+
+    async getMeteringPoint(request) {
+
+        if ((!request.company && !request.person) || (request.company && request.person))
+            throw new Error('request needs a valid "company" or "person" property');
+
+        const model = Object.assign({ requestId: uuid.v4(), userName: this._username, password: this._password, gln: this._gln_no }, request);
+        const payload = createGetMeteringPointPayload(model);
         const options = {
             uri: 'https://ws.nubix.no/2011/NubixService.svc',
             method: 'POST',
@@ -82,46 +119,46 @@ export class NubixClient {
                 "SOAPAction": "Statnett.Nubix.NubixService:getMeteringPointIdIn",
                 "Content-Type": "text/xml; charset=utf-8"
             },
-            body: body,
-            timeout: 5000
+            body: payload,
+            timeout: 10000
         };
 
         let response = await rp(options);
-       
-        const result = await new Promise((resolve, reject) => {
-            const parser = new xml2js.Parser({ explicitArray: false, normalizeTags: true });
-            parser.parseString(response, function (err, result) {
-                if (err) {
-                    reject(err);
-                    return
-                }
-                resolve(result);
-            });
-        });
+        const result = await parseXml(response);
 
         let resultResponse = find(result, 'response');
 
         if (!Array.isArray(resultResponse))
             resultResponse = [resultResponse];
 
+        const error = resultResponse.filter(r => this._errorTypes.includes(r.responsestatus.statuscode))[0];
+
+        if (error) throw new Error(error.responsestatus.description);
+
         return flatten(resultResponse.filter(r => r.responsestatus.statuscode === "Found").map(m => {
 
-            m.customers = m.customers.domesticcustomer;
-            m.customers = Array.isArray(m.customers)? m.customers : [m.customers];
-            
+            m.customers = m.customers.domesticcustomer || m.customers.commercialcustomer;
+            m.customers = Array.isArray(m.customers) ? m.customers : [m.customers];
+
             const gridOwner = {
                 name: m.gridowner.name,
                 gln: m.gridowner.gln
-            };            
+            };
 
             return m.customers.map(c => {
                 let readingType = find(c, 'meterreadingtransmissiontype');
                 readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown'
 
-                return {
-                    lastName: lastName,
-                    firstName: firstName,
-                    birthDate: birthDate,
+                let entity = request.company ? {
+                    name: find(c, 'name'),
+                    orgNo: find(c, 'orgno')
+                } : {
+                        lastName: find(c, 'lastname'),
+                        firstName: find(c, 'firstname'),
+                        birthDate: find(c, 'birthdate')
+                    };
+
+                return Object.assign(entity, {
                     address: {
                         address: find(c, 'address1'),
                         postalCode: find(c, 'postcode'),
@@ -134,9 +171,14 @@ export class NubixClient {
                         readingType: readingType,
                         lastMeterReadingDate: find(c, 'lastmeterreadingdate')
                     },
-                    gridOwner: gridOwner
-                }
-            })
+                    gridOwner
+                });
+            });
         }));
+
+    }
+    //kept for back compat
+    async getMeteringPointInfo(request) {
+        return await this.getMeteringPoint({ person: request });
     }
 }

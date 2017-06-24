@@ -6,8 +6,8 @@
             xmlns="http://www.nubix.no/CredentialsHeader" 
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
             xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-            <Username xmlns="">{#username#}</Username>
-            <Password xmlns="">{#password#}</Password>
+            <Username xmlns="">{{userName}}</Username>
+            <Password xmlns="">{{password}}</Password>
         </h:CredentialsHeader>
     </s:Header>
     <s:Body 
@@ -16,25 +16,38 @@
         <GetMeteringPointIdRequest 
             xmlns="http://www.nubix.no/MeteringPointMethods">
             <request>
-                <RequestId 
-                    xmlns="">{#requestId#}
-                </RequestId>
-                <Requestor 
+                <RequestId xmlns="">{{requestId}}</RequestId>
+                <Requestor xmlns=""><GLN>{{gln}}</GLN></Requestor>
+                {{#company}}
+                <CommercialCustomer 
                     xmlns="">
-                    <GLN>{#gln#}</GLN>
-                </Requestor>
-                <DomesticCustomer 
-                    xmlns="">
-                    <LastName>{#lastName#}</LastName>
-                    <FirstName>{#firstName#}</FirstName>
-                    <BirthDate>{#birthDate#}</BirthDate>
+                    {{#name}}<Name>{{../name}}</Name>{{/name}}
+                    {{#orgNo}}<OrgNo>{{../orgNo}}</OrgNo>{{/orgNo}}
+                    {{#meterNo}}<MeterNumber>{{../meterNo}}</MeterNumber>{{/meterNo}}
                     <Address>
-                        <Address1>{#address#}</Address1>
-                        <PostCode>{#postalCode#}</PostCode>
-                        <Location>{#city#}</Location>
+                        {{#if address.address}}<Address1>{{address.address}}</Address1>{{/if}}
+                        <PostCode>{{address.postalCode}}</PostCode>
+                        {{#if address.city}}<Location>{{address.city}}</Location>{{/if}}
                         <CountryCode>NO</CountryCode>
                     </Address>
+                </CommercialCustomer>
+                {{/company}}
+                {{#person}}
+                <DomesticCustomer 
+                    xmlns="">
+                    {{#lastName}}<LastName>{{../lastName}}</LastName>{{/lastName}}
+                    {{#firstName}}<FirstName>{{../firstName}}</FirstName>{{/firstName}}
+                    {{#birthDate}}<BirthDate>{{../birthDate}}</BirthDate>{{/birthDate}}
+                    
+                    <Address>
+                        {{#if address.address}}<Address1>{{address.address}}</Address1>{{/if}}
+                        <PostCode>{{address.postalCode}}</PostCode>
+                        {{#if address.city}}<Location>{{address.city}}</Location>{{/if}}
+                        <CountryCode>NO</CountryCode>
+                    </Address>
+                    
                 </DomesticCustomer>
+                {{/person}}
             </request>
         </GetMeteringPointIdRequest>
     </s:Body>

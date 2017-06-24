@@ -6,7 +6,8 @@
   "scripts": {
     "build": "babel src -d lib; cp src/getMeteringPoint.xml lib/getMeteringPoint.xml",
     "2npm": "publish",
-    "run": "babel-node test2.js"
+    "run": "babel-node test2.js",
+    "home": "babel-node check-home.js"
   },
   "author": "",
   "license": "ISC",
@@ -21,6 +22,7 @@
   },
   "dependencies": {
     "babel-polyfill": "^6.1.4",
+    "handlebars": "^4.0.10",
     "lodash.flatten": "^4.4.0",
     "moment-timezone": "^0.5.7",
     "request": "^2.78.0",
