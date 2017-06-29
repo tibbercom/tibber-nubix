@@ -53,6 +53,10 @@ export class NubixClient {
 
     async verifyMeteringPoint(request) {
 
+        if (request.birthDate) {
+            request.birthDate = moment.tz(request.birthDate, 'Europe/Oslo').format('YYYY-MM-DD');
+        }
+
         const model = Object.assign({ requestId: uuid.v4(), userName: this._username, password: this._password, gln: this._gln_no }, request);
         const payload = createVerifyMeteringPointPayload(model);
         const options = {
@@ -66,7 +70,7 @@ export class NubixClient {
             timeout: 10000
         };
 
-        let response = await rp(options);        
+        let response = await rp(options);
         const result = await parseXml(response);
         const resultResponse = find(result, 'meteringpointverifications');
 
@@ -82,10 +86,10 @@ export class NubixClient {
         let readingType = find(resultResponse, 'meterreadingtransmissiontype');
         readingType = readingType == 'Z50' ? 'remote' : readingType == 'Z51' ? 'manual' : readingType == 'Z52' ? 'unread' : 'unknown'
 
-        return Object.assign(returnResult, {    
-            name: find(resultResponse,'name'),
-            birthDate: find(resultResponse,'birthdate'),       
-            orgNo: find(resultResponse,'orgno'),
+        return Object.assign(returnResult, {
+            name: find(resultResponse, 'name'),
+            birthDate: find(resultResponse, 'birthdate'),
+            orgNo: find(resultResponse, 'orgno'),
             gridOwner: {
                 name: resultResponse.gridowner.name,
                 gln: resultResponse.gridowner.gln
@@ -109,6 +113,10 @@ export class NubixClient {
 
         if ((!request.company && !request.person) || (request.company && request.person))
             throw new Error('request needs a valid "company" or "person" property');
+
+        if (request.person && request.person.birthDate) {
+            request.person.birthDate = moment.tz(request.person.birthDate, 'Europe/Oslo').format('YYYY-MM-DD');
+        }
 
         const model = Object.assign({ requestId: uuid.v4(), userName: this._username, password: this._password, gln: this._gln_no }, request);
         const payload = createGetMeteringPointPayload(model);
