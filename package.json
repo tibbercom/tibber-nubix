@@ -1,10 +1,10 @@
 {
   "name": "tibber-nubix",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "",
   "main": "./lib/index.js",
   "scripts": {
-    "build": "babel src -d lib; cp src/getMeteringPoint.xml lib/getMeteringPoint.xml",
+    "build": "babel src -d lib; cp src/getMeteringPoint.xml lib/getMeteringPoint.xml;cp src/verifyMeteringPoint.xml lib/verifyMeteringPoint.xml",
     "2npm": "publish",
     "run": "babel-node test2.js",
     "home": "babel-node check-home.js"
