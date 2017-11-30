@@ -38,6 +38,7 @@
                     {{#lastName}}<LastName>{{../lastName}}</LastName>{{/lastName}}
                     {{#firstName}}<FirstName>{{../firstName}}</FirstName>{{/firstName}}
                     {{#birthDate}}<BirthDate>{{../birthDate}}</BirthDate>{{/birthDate}}
+                    {{#meterNo}}<MeterNumber>{{../meterNo}}</MeterNumber>{{/meterNo}}
                     
                     <Address>
                         {{#if address.address}}<Address1>{{address.address}}</Address1>{{/if}}
