@@ -74,6 +74,8 @@ export class NubixClient {
         const result = await parseXml(response);
         const resultResponse = find(result, 'meteringpointverifications');
 
+
+
         if (this._errorTypes.includes(resultResponse.responsestatus.statuscode))
             throw new Error(resultResponse.responsestatus.description);
 
@@ -104,7 +106,8 @@ export class NubixClient {
                 meteringPointId: find(resultResponse, 'meteringpointid'),
                 meterNumber: resultResponse.meternumber,
                 readingType: readingType,
-                lastMeterReadingDate: find(resultResponse, 'lastmeterreadingdate')
+                lastMeterReadingDate: find(resultResponse, 'lastmeterreadingdate'),
+                startOfSupplyDuty: find(resultResponse, 'startofsupplyduty')
             }
         });
     }
@@ -132,7 +135,7 @@ export class NubixClient {
         };
 
         let response = await rp(options);
-        const result = await parseXml(response);
+        const result = await parseXml(response);       
 
         let resultResponse = find(result, 'response');
 
@@ -177,7 +180,8 @@ export class NubixClient {
                         meteringPointId: find(c, 'meteringpointid'),
                         meterNumber: c.meternumber,
                         readingType: readingType,
-                        lastMeterReadingDate: find(c, 'lastmeterreadingdate')
+                        lastMeterReadingDate: find(c, 'lastmeterreadingdate'),
+                        startOfSupplyDuty: find(c, 'startofsupplyduty')
                     },
                     gridOwner
                 });
