@@ -135,7 +135,7 @@ export class NubixClient {
         };
 
         let response = await rp(options);
-        const result = await parseXml(response);       
+        const result = await parseXml(response);
 
         let resultResponse = find(result, 'response');
 
@@ -187,8 +187,134 @@ export class NubixClient {
                 });
             });
         }));
-
     }
+
+    async getMeteringPointTriangulate(request) {
+
+        const personRequest = request.person;
+        const companyRequest = request.company;
+
+        const search = async (request, retries) => {
+
+            const searchQuality = request.searchQuality;
+            delete request.searchQuality;
+
+            try {
+
+                const results = await this.getMeteringPoint(request);
+
+                return results.map(r => {
+                    r.resultStrength = searchQuality;
+                    return r;
+                });
+            }
+            catch (err) {                
+                if (retries == 1) {
+
+                    return await search(Object.assign({}, request, searchQuality), ++retries);
+                }
+                return []
+            }
+        };
+
+        const requests = [
+
+            personRequest && personRequest.birthDate && personRequest.lastName && personRequest.address.address && !!!personRequest.organizationNo ?
+                {
+                    searchQuality: 0,
+                    person: {
+                        lastName: personRequest.lastName,
+                        birthDate: personRequest.birthDate,
+                        address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                    }
+                } : null,
+            personRequest && personRequest.birthDate && personRequest.lastName ?
+                {
+                    searchQuality: 1,
+                    person: {
+                        lastName: personRequest.lastName,
+                        birthDate: personRequest.birthDate,
+                        address: { postalCode: personRequest.address.postalCode }
+                    }
+                } : null,
+            personRequest && personRequest.lastName && personRequest.address.address && !personRequest.organizationNo ?
+                {
+                    searchQuality: 1,
+                    person: {
+                        lastName: personRequest.lastName,
+                        address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                    }
+                } : null,
+            personRequest && personRequest.birthDate && personRequest.address.address ? {
+                searchQuality: 2,
+                person: {
+                    birthDate: personRequest.birthDate,
+                    address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                }
+            } : null,
+            personRequest && personRequest.birthDate && personRequest.meterNo ? {
+                searchQuality: 0,
+                person: {
+                    birthDate: personRequest.birthDate,
+                    meterNo: personRequest.meterNo,
+                    address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                }
+            } : null,
+            personRequest && personRequest.birthDate && personRequest.meterNo ? {
+                searchQuality: 1,
+                person: {
+                    lastName: personRequest.lastName,
+                    meterNo: personRequest.meterNo,
+                    address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                }
+            } : null,
+            companyRequest && companyRequest.organizationNo && companyRequest.meterNo ? {
+                searchQuality: 1,
+                company: {
+                    name: companyRequest.lastName,
+                    orgNo: companyRequest.organizationNo,
+                    meterNo: companyRequest.meterNo,
+                    address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
+                }
+            } : null,
+            companyRequest && companyRequest.organizationNo && companyRequest.address.address ? {
+                searchQuality: 1,
+                company: {
+                    name: companyRequest.lastName,
+                    orgNo: companyRequest.organizationNo,
+                    meterNo: companyRequest.meterNo,
+                    address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
+                }
+            } : null
+            , companyRequest && companyRequest.organizationNo && !companyRequest.address.address ? {
+                searchQuality: 1,
+                company: {
+                    name: companyRequest.lastName,
+                    orgNo: companyRequest.organizationNo,
+                    meterNo: companyRequest.meterNo,
+                    address: { postalCode: companyRequest.address.postalCode }
+                }
+            } : null,
+            , companyRequest && companyRequest.meterNo && companyRequest.address.address ? {
+                searchQuality: 1,
+                company: {
+                    meterNo: companyRequest.meterNo,
+                    address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
+                }
+            } : null].filter(r => r);
+
+        let results = await Promise.all(requests.map(async r => await search(r)));
+
+        results = results.reduce((p, c) => p.concat(c), []);
+
+        if (!results.some(r => true)) return [];
+
+        const result = results.sort((a, b) => a.resultStrength > b.resultStrength ? -1 : 1)
+            .reduce((p, c) => { p[c.installation.meteringPointId] = c; return p }, {})
+
+        return Object.keys(result).map(key => result[key]);
+    }
+
     //kept for back compat
     async getMeteringPointInfo(request) {
         return await this.getMeteringPoint({ person: request });
