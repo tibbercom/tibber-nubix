@@ -8,6 +8,7 @@ import uuid from 'uuid';
 import xml2js from 'xml2js';
 import flatten from 'lodash.flatten';
 import Handlebars from 'handlebars';
+import holidays from 'holidays-norway';
 
 const createGetMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/getMeteringPoint.xml', 'utf8'));
 const createVerifyMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/verifyMeteringPoint.xml', 'utf8'));
@@ -185,6 +186,10 @@ export class NubixClient {
                     },
                     gridOwner
                 });
+            }).map(r => {
+                r.canChangeSupplierWithoutReading = !(estimateNeedForReading(r.installation.lastMeterReadingDate, r.installation.readingType));
+                return r;
+
             });
         }));
     }
@@ -208,7 +213,7 @@ export class NubixClient {
                     return r;
                 });
             }
-            catch (err) {                
+            catch (err) {
                 if (retries == 1) {
 
                     return await search(Object.assign({}, request, searchQuality), ++retries);
@@ -320,3 +325,37 @@ export class NubixClient {
         return await this.getMeteringPoint({ person: request });
     }
 }
+
+const estimateNeedForReading = (lastReading, readingType) => {
+
+    let needsMeterReading = false;
+
+    if (readingType == 'manual' && lastReading) {
+
+        let takeOverDate = moment.tz('Europe/Oslo').add(15, 'days');
+        let year = takeOverDate.year();
+        let holidays_year = holidays.by_year(year).reduce((p, c) => { p[c.date] = true; return p; }, {});
+        let workingDays = 0;
+
+        while (workingDays < 20) {
+            takeOverDate.subtract(1, 'day');
+
+            let currentYear = takeOverDate.year();
+
+            if (currentYear != year) {
+                year = currentYear;
+                holidays_year = holidays.by_year(year).reduce((p, c) => { p[c.date] = true; return p; }, {});
+            }
+
+            const weekDay = takeOverDate.isoWeekday();
+
+            if (weekDay == 6 || weekDay == 7 || holidays_year[takeOverDate.format('YYYY-MM-DD')]) {
+                continue;
+            }
+            workingDays++;
+        }
+
+        needsMeterReading = takeOverDate.isAfter(moment.tz(lastReading, 'Europe/Oslo'));
+    }
+    return needsMeterReading;
+};
