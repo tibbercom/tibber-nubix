@@ -216,97 +216,98 @@ export class NubixClient {
             catch (err) {
                 if (retries == 1) {
 
-                    return await search(Object.assign({}, request, searchQuality), ++retries);
+                    return await search({ ...request, searchQuality }, ++retries);
                 }
                 return []
             }
         };
 
         const requests = [
-
-            personRequest && personRequest.birthDate && personRequest.lastName && personRequest.address.address && !!!personRequest.organizationNo ?
-                {
-                    searchQuality: 0,
-                    person: {
-                        lastName: personRequest.lastName,
-                        birthDate: personRequest.birthDate,
-                        address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
-                    }
-                } : null,
-            personRequest && personRequest.birthDate && personRequest.lastName ?
-                {
-                    searchQuality: 1,
-                    person: {
-                        lastName: personRequest.lastName,
-                        birthDate: personRequest.birthDate,
-                        address: { postalCode: personRequest.address.postalCode }
-                    }
-                } : null,
-            personRequest && personRequest.lastName && personRequest.address.address && !personRequest.organizationNo ?
-                {
-                    searchQuality: 1,
-                    person: {
-                        lastName: personRequest.lastName,
-                        address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
-                    }
-                } : null,
-            personRequest && personRequest.birthDate && personRequest.address.address ? {
+            personRequest && personRequest.birthDate && personRequest.lastName && personRequest.address.address && !!!personRequest.organizationNo
+            && {
+                searchQuality: 0,
+                person: {
+                    lastName: personRequest.lastName,
+                    birthDate: personRequest.birthDate,
+                    address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                }
+            },
+            personRequest && personRequest.birthDate && personRequest.lastName && {
+                searchQuality: 1,
+                person: {
+                    lastName: personRequest.lastName,
+                    birthDate: personRequest.birthDate,
+                    address: { postalCode: personRequest.address.postalCode }
+                }
+            },
+            personRequest && personRequest.lastName && personRequest.address.address && {
+                searchQuality: 1,
+                person: {
+                    lastName: personRequest.lastName,
+                    address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                }
+            },
+            personRequest && personRequest.birthDate && personRequest.address.address && {
                 searchQuality: 2,
                 person: {
                     birthDate: personRequest.birthDate,
                     address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
                 }
-            } : null,
-            personRequest && personRequest.birthDate && personRequest.meterNo ? {
+            },
+            personRequest && personRequest.birthDate && personRequest.meterNo && {
                 searchQuality: 0,
                 person: {
                     birthDate: personRequest.birthDate,
                     meterNo: personRequest.meterNo,
-                    address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
+                    address: { postalCode: personRequest.address.postalCode }
                 }
-            } : null,
-            personRequest && personRequest.birthDate && personRequest.meterNo ? {
+            },
+            personRequest && personRequest.birthDate && personRequest.meterNo && personRequest.address.address && {
                 searchQuality: 1,
                 person: {
                     lastName: personRequest.lastName,
                     meterNo: personRequest.meterNo,
                     address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
                 }
-            } : null,
-            companyRequest && companyRequest.organizationNo && companyRequest.meterNo ? {
-                searchQuality: 1,
+            },
+            companyRequest && companyRequest.orgNo && companyRequest.meterNo && companyRequest.address.address && {
+                searchQuality: 0,
                 company: {
-                    name: companyRequest.lastName,
-                    orgNo: companyRequest.organizationNo,
+                    orgNo: companyRequest.orgNo,
                     meterNo: companyRequest.meterNo,
                     address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
                 }
-            } : null,
-            companyRequest && companyRequest.organizationNo && companyRequest.address.address ? {
-                searchQuality: 1,
+            },
+            companyRequest && companyRequest.name && companyRequest.meterNo && {
+                searchQuality: 0,
                 company: {
-                    name: companyRequest.lastName,
-                    orgNo: companyRequest.organizationNo,
-                    meterNo: companyRequest.meterNo,
-                    address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
-                }
-            } : null
-            , companyRequest && companyRequest.organizationNo && !companyRequest.address.address ? {
-                searchQuality: 1,
-                company: {
-                    name: companyRequest.lastName,
-                    orgNo: companyRequest.organizationNo,
+                    name: companyRequest.name,
                     meterNo: companyRequest.meterNo,
                     address: { postalCode: companyRequest.address.postalCode }
                 }
-            } : null,
-            , companyRequest && companyRequest.meterNo && companyRequest.address.address ? {
-                searchQuality: 1,
+            },
+            companyRequest && companyRequest.name && companyRequest.orgNo && {
+                searchQuality: 2,
                 company: {
-                    meterNo: companyRequest.meterNo,
+                    name: companyRequest.name,
+                    orgNo: companyRequest.orgNo,
+                    address: { postalCode: companyRequest.address.postalCode }
+                }
+            },
+            companyRequest && companyRequest.orgNo && companyRequest.address.address && {
+                searchQuality: 0,
+                company: {
+                    orgNo: companyRequest.orgNo,
                     address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
                 }
-            } : null].filter(r => r);
+            },
+            companyRequest && companyRequest.name && companyRequest.address.address && {
+                searchQuality: 0,
+                company: {
+                    name: companyRequest.name,
+                    address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
+                }
+            }].filter(r => r);
 
         let results = await Promise.all(requests.map(async r => await search(r)));
 
