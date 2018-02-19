@@ -262,7 +262,7 @@ export class NubixClient {
                     address: { postalCode: personRequest.address.postalCode }
                 }
             },
-            personRequest && personRequest.birthDate && personRequest.meterNo && personRequest.address.address && {
+            personRequest && personRequest.meterNo && personRequest.address.address && {
                 searchQuality: 1,
                 person: {
                     lastName: personRequest.lastName,
