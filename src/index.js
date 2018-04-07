@@ -9,9 +9,23 @@ import xml2js from 'xml2js';
 import flatten from 'lodash.flatten';
 import Handlebars from 'handlebars';
 import holidays from 'holidays-norway';
+import ExtendableError from 'es6-error';
 
 const createGetMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/getMeteringPoint.xml', 'utf8'));
 const createVerifyMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/verifyMeteringPoint.xml', 'utf8'));
+
+
+class NubixError extends ExtendableError {
+    constructor(status, statusDescription) {
+        super(`nubix search failed with: ${status} - ${statusDescription}`)
+        this.status = status;
+        this.statusDescription = statusDescription;
+    }
+
+    toString() {
+        return JSON.stringify({ status: this.status, statusDescription: this.statusDescription });
+    }
+}
 
 function find(source, propertyName) {
 
@@ -75,10 +89,8 @@ export class NubixClient {
         const result = await parseXml(response);
         const resultResponse = find(result, 'meteringpointverifications');
 
-
-
         if (this._errorTypes.includes(resultResponse.responsestatus.statuscode))
-            throw new Error(resultResponse.responsestatus.description);
+            throw new NubixError(error.responsestatus.statuscode, error.responsestatus.description);
 
         let returnResult = {
             found: resultResponse.responsestatus.statuscode === 'Found'
@@ -136,6 +148,7 @@ export class NubixClient {
         };
 
         let response = await rp(options);
+
         const result = await parseXml(response);
 
         let resultResponse = find(result, 'response');
@@ -145,7 +158,7 @@ export class NubixClient {
 
         const error = resultResponse.filter(r => this._errorTypes.includes(r.responsestatus.statuscode))[0];
 
-        if (error) throw new Error(error.responsestatus.description);
+        if (error) throw new NubixError(error.responsestatus.statuscode, error.responsestatus.description);
 
         return flatten(resultResponse.filter(r => r.responsestatus.statuscode === "Found").map(m => {
 
@@ -194,7 +207,7 @@ export class NubixClient {
         }));
     }
 
-    async getMeteringPointTriangulate(request) {
+    getMeteringPointTriangulateStream(request, callback, done) {
 
         const personRequest = request.person;
         const companyRequest = request.company;
@@ -218,11 +231,11 @@ export class NubixClient {
 
                     return await search({ ...request, searchQuality }, ++retries);
                 }
-                return []
+                throw err;
             }
         };
 
-        const requests = [
+        let requests = [
             personRequest && personRequest.birthDate && personRequest.lastName && personRequest.address.address && !!!personRequest.organizationNo
             && {
                 searchQuality: 0,
@@ -254,7 +267,7 @@ export class NubixClient {
                     address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
                 }
             },
-            personRequest && personRequest.birthDate && personRequest.meterNo &&  {
+            personRequest && personRequest.birthDate && personRequest.meterNo && {
                 searchQuality: 0,
                 person: {
                     birthDate: personRequest.birthDate,
@@ -310,16 +323,47 @@ export class NubixClient {
                 }
             }].filter(r => r);
 
-        let results = await Promise.all(requests.map(async r => await search(r)));
+        let numOfResults = 0;
+        let containsZipCodeError = false;
 
-        results = results.reduce((p, c) => p.concat(c), []);
+        Promise.all(requests.map(req => {
+            return search(req).then(results => { numOfResults++; results.forEach(r => callback(null, r)); })
+                .catch(err => { containsZipCodeError = containsZipCodeError || err.status === "NoGridOwner"; callback(err); })
+        }))
 
-        if (!results.some(r => true)) return [];
+            .then(() => {
 
-        const result = results.sort((a, b) => a.resultStrength > b.resultStrength ? -1 : 1)
-            .reduce((p, c) => { p[c.installation.meteringPointId] = c; return p }, {})
+                if (!containsZipCodeError || numOfResults) {
+                    done();
+                    return;
+                }
 
-        return Object.keys(result).map(key => result[key]);
+                requests = requests.map(r => {
+                    const entity = r.person || r.company;
+                    entity.address.postalCode = (Number(entity.address.postalCode) / 10).toFixed(0) + "0";                    
+                    return r;
+                });
+
+                Promise.all(requests.map(req => { search(req).then(results => results.forEach(r => callback(null, r))).catch(err => callback(err)) })).then(() => done());
+            });
+    }
+
+    async getMeteringPointTriangulate(request) {
+
+        return new Promise((resolve, reject) => {
+            let results = [];
+            this.getMeteringPointTriangulateStream(request, (err, r) => err ? null : results.push(r), () => {
+
+                results = results.reduce((p, c) => p.concat(c), []);
+
+                if (!results.some(r => true)) resolve([]);
+
+                const result = results.sort((a, b) => a.resultStrength > b.resultStrength ? -1 : 1)
+                    .reduce((p, c) => { p[c.installation.meteringPointId] = c; return p }, {})
+
+                resolve(Object.keys(result).map(key => result[key]));
+            });
+        });
     }
 
     //kept for back compat

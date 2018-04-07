@@ -1,6 +1,6 @@
 {
   "name": "tibber-nubix",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "",
   "main": "./lib/index.js",
   "scripts": {
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "babel-polyfill": "^6.1.4",
+    "es6-error": "^4.1.1",
     "handlebars": "^4.0.10",
     "holidays-norway": "^1.0.4",
     "lodash.flatten": "^4.4.0",
