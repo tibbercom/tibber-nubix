@@ -10,6 +10,7 @@ import flatten from 'lodash.flatten';
 import Handlebars from 'handlebars';
 import holidays from 'holidays-norway';
 import ExtendableError from 'es6-error';
+import deepClone from 'deep-clone'
 
 const createGetMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/getMeteringPoint.xml', 'utf8'));
 const createVerifyMeteringPointPayload = Handlebars.compile(fs.readFileSync(__dirname + '/verifyMeteringPoint.xml', 'utf8'));
@@ -292,6 +293,15 @@ export class NubixClient {
                     address: { address: companyRequest.address.address, postalCode: companyRequest.address.postalCode }
                 }
             },
+            , 
+            companyRequest && companyRequest.orgNo && companyRequest.meterNo && {
+                searchQuality: 0,
+                company: {
+                    orgNo: companyRequest.orgNo,
+                    meterNo: companyRequest.meterNo,
+                    address: { postalCode: companyRequest.address.postalCode }
+                }
+            },
             companyRequest && companyRequest.name && companyRequest.meterNo && {
                 searchQuality: 0,
                 company: {
@@ -323,6 +333,20 @@ export class NubixClient {
                 }
             }].filter(r => r);
 
+
+        const houseNumber = /(\s\d*[a-zA-Z]*)$/;
+
+        const propName = companyRequest ? 'company' : 'person';
+
+        const withStreetNameOnly = requests.filter(r=> r[propName].address.address && houseNumber.test(r[propName].address.address))
+                                     .map(r=>{
+                                        const temp = deepClone(r);
+                                        temp[propName].address.address = temp[propName].address.address.replace(houseNumber,'').trim();
+                                        return temp;
+                                     });
+
+        requests = requests.concat(withStreetNameOnly);          
+        
         let numOfResults = 0;
         let containsZipCodeError = false;
 
