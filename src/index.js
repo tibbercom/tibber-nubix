@@ -204,7 +204,7 @@ export class NubixClient {
                 r.canChangeSupplierWithoutReading = !(estimateNeedForReading(r.installation.lastMeterReadingDate, r.installation.readingType));
                 return r;
 
-            });
+            }).filter(r=> parseInt(r.address.postalCode/100) == parseInt((request.company||request.person).address.postalCode/100));
         }));
     }
 
