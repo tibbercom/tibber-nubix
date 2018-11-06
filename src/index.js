@@ -276,13 +276,20 @@ export class NubixClient {
                     address: { postalCode: personRequest.address.postalCode }
                 }
             },
-            personRequest && personRequest.lastName && personRequest.meterNo && personRequest.address.postalCode && {
-                //VG: lastName, meterNo, postalCode
+            personRequest && personRequest.lastName && personRequest.meterNo && personRequest.address.postalCode && {                
                 searchQuality: 1,
                 person: {
                     lastName: personRequest.lastName,
                     meterNo: personRequest.meterNo,
                     address: { postalCode: personRequest.address.postalCode }
+                }
+            },
+            personRequest && personRequest.address.address && personRequest.meterNo && personRequest.address.postalCode && {                
+                searchQuality: 1,
+                person: {
+                    lastName: personRequest.lastName,
+                    meterNo: personRequest.meterNo,
+                    address: { address: personRequest.address.address, postalCode: personRequest.address.postalCode }
                 }
             },
             companyRequest && companyRequest.orgNo && companyRequest.meterNo && companyRequest.address.address && {
